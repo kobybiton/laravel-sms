@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Period;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PeriodController extends Controller
 {
@@ -11,9 +13,18 @@ class PeriodController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {
-        //
+    public function index(){
+        $period = Period::all();
+        return response()->json($period);
+    }
+
+    public function students($id){
+        if ($period = Period::find($id)) {
+            return response()->json($period->students);
+        }
+
+        // Doesn't exist error?
+        return null;
     }
 
     /**
@@ -21,9 +32,9 @@ class PeriodController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
-    {
-        //
+    public function create(){
+        $period = Period::all();
+        return response()->json($period);
     }
 
     /**
@@ -32,9 +43,14 @@ class PeriodController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-    {
-        //
+    public function store(Request $request) {
+        $validated = $request->validate([
+            'name' => 'bail|required|min:6|max:50'
+        ]);
+
+        $period = Period::create($validated);
+
+        return response()->json($period);
     }
 
     /**
@@ -43,9 +59,11 @@ class PeriodController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
-    {
-        //
+    public function show($id){
+        $period = Period::find($id);
+        $periods = Period::all();
+        return response()->json($periods);
+
     }
 
     /**
@@ -54,9 +72,10 @@ class PeriodController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
-    {
-        //
+    public function edit($id){
+        $period = Period::find($id);
+        return response()->json($period);
+
     }
 
     /**
@@ -66,9 +85,14 @@ class PeriodController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
-        //
+    public function update(Request $request, $id){
+        $period = Period::find($id);
+        $validated = $request->validate([
+            'fullName' => 'bail|required|min:6|max:50'
+        ]);
+
+        $period->fill($validated)->save();
+        return response()->json($period);
     }
 
     /**
@@ -77,8 +101,9 @@ class PeriodController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
-    {
-        //
+    public function destroy($id){
+        $period = Period::find($id);
+        $period->delete() ;
+        return response()->json($period);
     }
 }

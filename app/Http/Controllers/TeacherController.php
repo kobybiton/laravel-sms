@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Teacher;
+use App\Period;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class TeacherController extends Controller
 {
@@ -11,9 +15,30 @@ class TeacherController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {
-        //
+    public function index(){
+        $teacher = Teacher::all();
+        return response()->json($teacher);
+    }
+
+    public function periods($id) {
+        if ($teacher = Teacher::find($id)) {
+            return response()->json($teacher->periods);
+        }
+
+        return null;
+    }
+
+    public function students($id) {
+        if ($teacher = Teacher::find($id)) {
+            return $teacher->periods()->with('students')->get()
+                ->map(function($period) {
+                    return $period->students;
+                })
+                ->flatten()
+                ->unique()
+                ->toJson();
+        }
+        return null;
     }
 
     /**
@@ -21,9 +46,9 @@ class TeacherController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
-    {
-        //
+    public function create(){
+        $teacher = Teacher::all();
+        return response()->json($teacher);
     }
 
     /**
@@ -32,9 +57,17 @@ class TeacherController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-    {
-        //
+    public function store(Request $request){
+        $validated = $request->validate([
+            'userName' => 'bail|required|min:3|max:50|unique:teachers|unique:students',
+            'password' => 'bail|required|min:6|max:50',
+            'fullName' => 'bail|required|min:6|max:50',
+            'email' => 'bail|required|email'
+        ]);
+
+        $validated['password'] = Hash::make($validated['password']);
+        $teacher = Teacher::create($validated);
+        return response()->json($teacher);
     }
 
     /**
@@ -43,9 +76,11 @@ class TeacherController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
-    {
-        //
+    public function show($id){
+        $teacher = Teacher::find($id);
+        $teachers = Teacher::all();
+        return response()->json($teachers);
+
     }
 
     /**
@@ -54,9 +89,10 @@ class TeacherController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
-    {
-        //
+    public function edit($id){
+        $teacher = Teacher::find($id);
+        return response()->json($teacher);
+
     }
 
     /**
@@ -66,9 +102,20 @@ class TeacherController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
-        //
+    public function update(Request $request, $id){
+
+        $teacher = Teacher::find($id);
+        $validated = $request->validate([
+            'userName' => "bail|required|min:3|max:50|unique:teachers,userName,$id|unique:students",
+            'password' => 'bail|required|min:6|max:50',
+            'fullName' => 'bail|required|min:6|max:50',
+            'email' => 'bail|required|email'
+        ]);
+
+        $validated['password'] = Hash::make($validated['password']);
+
+        $teacher->fill($validated)->save();
+        return response()->json($teacher);
     }
 
     /**
@@ -77,8 +124,29 @@ class TeacherController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
-    {
-        //
+    public function destroy($id){
+        $teacher = Teacher::find($id);
+        $teacher->delete();
+        return response()->json($teacher);
+    }
+
+    public function assignToPeriod(Request $request, $id) {
+        $teacher = Auth::guard('teacher')->user();
+
+        if ($period = Period::find($id)) {
+            $period->teacher()->associate($teacher)->save();
+        }
+
+        return response()->json($teacher);
+    }
+
+    public function removeFromPeriod(Request $request, $id) {
+        $teacher = Auth::guard('teacher')->user();
+
+        if ($period = Period::find($id)) {
+            $period->teacher()->dissociate($teacher)->save();
+        }
+
+        return response()->json($teacher);
     }
 }
